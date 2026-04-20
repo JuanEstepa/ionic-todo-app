@@ -1,0 +1,194 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>
+      Mis Tareas @if (pendingCount() > 0) {
+      <ion-badge color="light" style="margin-left: 8px; font-size: 12px">
+        {{ pendingCount() }}
+      </ion-badge>
+      }
+    </ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button (click)="clearCompleted()" title="Limpiar completadas">
+        <ion-icon slot="icon-only" name="checkmark-done-outline" />
+      </ion-button>
+
+      <ion-button routerLink="/categories" title="Gestionar categorías">
+        <ion-icon slot="icon-only" name="pricetags-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <ion-toolbar>
+    <ion-segment
+      [value]="selectedCategoryId()"
+      scrollable="true"
+      (ionChange)="onCategoryChange($any($event.detail.value))"
+    >
+      <ion-segment-button value="all">
+        <ion-label>Todas</ion-label>
+      </ion-segment-button>
+
+      @for (cat of categories(); track cat.id) {
+      <ion-segment-button [value]="cat.id">
+        <ion-label>
+          <span
+            style="
+              display: inline-block;
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              margin-right: 4px;
+              vertical-align: middle;
+            "
+            [style.background-color]="cat.color"
+          >
+          </span>
+          {{ cat.name }}
+        </ion-label>
+      </ion-segment-button>
+      }
+    </ion-segment>
+  </ion-toolbar>
+
+  <ion-toolbar>
+    <div style="display: flex; gap: 8px; padding: 8px 16px">
+      <ion-chip
+        [color]="selectedStatus() === 'all' ? 'primary' : 'medium'"
+        (click)="onStatusChange('all')"
+      >
+        <ion-label>Todas</ion-label>
+      </ion-chip>
+
+      <ion-chip
+        [color]="selectedStatus() === 'pending' ? 'warning' : 'medium'"
+        (click)="onStatusChange('pending')"
+      >
+        <ion-label>Pendientes</ion-label>
+      </ion-chip>
+
+      <ion-chip
+        [color]="selectedStatus() === 'completed' ? 'success' : 'medium'"
+        (click)="onStatusChange('completed')"
+      >
+        <ion-label>Completadas</ion-label>
+      </ion-chip>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-list>
+    @for (task of filteredTasks(); track task.id) {
+
+    <ion-item-sliding #slidingItem>
+      <ion-item-options side="end">
+        <ion-item-option
+          color="danger"
+          expandable
+          (click)="deleteTask(task); slidingItem.close()"
+        >
+          <ion-icon slot="icon-only" name="trash-outline" />
+        </ion-item-option>
+      </ion-item-options>
+
+      <ion-item-options side="start">
+        <ion-item-option
+          color="tertiary"
+          (click)="editTask(task); slidingItem.close()"
+        >
+          <ion-icon slot="icon-only" name="create-outline" />
+        </ion-item-option>
+      </ion-item-options>
+
+      <ion-item
+        [class.task-completed]="task.completed"
+        (press)="openTaskOptions(task)"
+      >
+        <ion-checkbox
+          slot="start"
+          [checked]="task.completed"
+          (ionChange)="toggleTask(task.id)"
+        />
+
+        <ion-label>
+          <h3
+            [style.text-decoration]="task.completed ? 'line-through' : 'none'"
+            [style.color]="task.completed ? 'var(--ion-color-medium)' : 'inherit'"
+          >
+            {{ task.title }}
+          </h3>
+
+          @if (task.categoryId) {
+          <p>
+            <ion-badge
+              [style.background-color]="getCategoryColor(task.categoryId)"
+              style="color: white; font-size: 11px; padding: 2px 8px"
+            >
+              {{ getCategoryName(task.categoryId) }}
+            </ion-badge>
+          </p>
+          }
+        </ion-label>
+
+        <ion-button
+          slot="end"
+          fill="clear"
+          size="small"
+          (click)="openTaskOptions(task)"
+        >
+          <ion-icon slot="icon-only" name="ellipsis-vertical" />
+        </ion-button>
+      </ion-item>
+    </ion-item-sliding>
+
+    } @empty {
+
+    <div class="empty-state">
+      <ion-icon name="checkmark-circle-outline" color="medium" />
+
+      <h3>Sin tareas</h3>
+
+      @if (selectedCategoryId() === 'all' && selectedStatus() === 'all') {
+      <p>Agrega tu primera tarea abajo</p>
+      } @if (selectedCategoryId() !== 'all') {
+      <p>No hay tareas en esta categoría</p>
+      } @if (selectedStatus() === 'completed') {
+      <p>Aún no tienes tareas completadas</p>
+      } @if (selectedStatus() === 'pending' && selectedCategoryId() === 'all') {
+      <p>¡Todo al día! No hay pendientes</p>
+      }
+    </div>
+    }
+  </ion-list>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div
+      style="display: flex; align-items: center; gap: 8px; padding: 8px 16px"
+    >
+      <ion-input
+        [(ngModel)]="newTaskTitle"
+        placeholder="Nueva tarea..."
+        [clearInput]="true"
+        (keyup.enter)="addTask()"
+        style="
+          background: var(--ion-color-light);
+          border-radius: 20px;
+          padding: 0 12px;
+          flex: 1;
+        "
+      />
+
+      <ion-button
+        shape="round"
+        color="primary"
+        (click)="addTask()"
+        [disabled]="!newTaskTitle.trim()"
+      >
+        <ion-icon slot="icon-only" name="add-outline" />
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

@@ -1,0 +1,106 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Categorías</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button (click)="openAddCategoryAlert()" title="Nueva categoría">
+        <ion-icon slot="icon-only" name="add-outline" />
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-list>
+    <ion-list-header>
+      <ion-label>
+        <h3>Tus categorías</h3>
+        <p>Organiza tus tareas agrupándolas por tema</p>
+      </ion-label>
+    </ion-list-header>
+
+    @for (cat of categories(); track cat.id) {
+
+    <ion-item-sliding #slidingItem>
+      <ion-item-options side="end">
+        <ion-item-option
+          color="danger"
+          expandable
+          (click)="confirmDeleteCategory(cat); slidingItem.close()"
+        >
+          <ion-icon slot="icon-only" name="trash-outline" />
+        </ion-item-option>
+      </ion-item-options>
+
+      <ion-item>
+        <div
+          slot="start"
+          [style.background-color]="cat.color"
+          style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0"
+        ></div>
+
+        <ion-label>
+          <h2>{{ cat.name }}</h2>
+          <p>
+            {{ getTaskCount(cat.id) }} {{ getTaskCount(cat.id) === 1 ? 'tarea' :
+            'tareas' }}
+          </p>
+        </ion-label>
+
+        <ion-badge
+          slot="end"
+          [style.background-color]="cat.color"
+          style="margin-right: 8px; min-width: 24px; text-align: center"
+        >
+          {{ getTaskCount(cat.id) }}
+        </ion-badge>
+
+        <ion-button
+          slot="end"
+          fill="clear"
+          (click)="openEditCategoryAlert(cat)"
+        >
+          <ion-icon slot="icon-only" name="create-outline" color="medium" />
+        </ion-button>
+
+        <ion-button
+          slot="end"
+          fill="clear"
+          (click)="confirmDeleteCategory(cat)"
+        >
+          <ion-icon slot="icon-only" name="trash-outline" color="danger" />
+        </ion-button>
+      </ion-item>
+    </ion-item-sliding>
+
+    } @empty {
+    <div class="empty-state">
+      <ion-icon name="pricetags-outline" color="medium" />
+      <h3>Sin categorías</h3>
+      <p>Crea tu primera categoría con el botón <strong>+</strong> de arriba</p>
+      <ion-button
+        color="primary"
+        shape="round"
+        style="margin-top: 24px"
+        (click)="openAddCategoryAlert()"
+      >
+        <ion-icon slot="start" name="add-outline" />
+        Nueva categoría
+      </ion-button>
+    </div>
+    }
+  </ion-list>
+
+  @if (categories().length > 0) {
+  <p
+    style="
+      padding: 16px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--ion-color-medium);
+    "
+  >
+    Desliza una categoría hacia la izquierda para eliminarla rápidamente
+  </p>
+  }
+</ion-content>
