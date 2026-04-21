@@ -89,6 +89,9 @@ export class RemoteConfigService {
         show_categories_tab: true,
       };
 
+      this.remoteConfig.settings.minimumFetchIntervalMillis = 0;
+      this.remoteConfig.settings.fetchTimeoutMillis = 60000;
+
       // fetchAndActivate() hace dos cosas en una llamada:
       // 1. fetch()    → descarga los valores más recientes del servidor
       // 2. activate() → los activa para que getValue() los retorne
@@ -101,11 +104,12 @@ export class RemoteConfigService {
         '[RemoteConfig] Cargado. show_categories_tab =',
         this.showCategoriesTab(),
       );
-    } catch (error) {
-      // Si Remote Config falla, la app sigue funcionando con defaults
+    } catch (error: any) {
       console.warn(
-        '[RemoteConfig] Error al cargar, usando valores por defecto:',
-        error,
+        '[RemoteConfig] Error:',
+        JSON.stringify(error),
+        error?.message,
+        error?.code,
       );
     }
   }

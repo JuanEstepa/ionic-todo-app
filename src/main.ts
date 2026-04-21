@@ -33,7 +33,7 @@ import {
 
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
-import { RemoteConfigService } from './app/services/remote-config.service.ts';
+import { RemoteConfigService } from './app/services/remote-config.service';
 import { environment } from './environments/environment';
 
 if (environment.production) {

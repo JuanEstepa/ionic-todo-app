@@ -12,6 +12,10 @@ $RECYCLE.BIN/
 *.log
 log.txt
 
+*.apk
+*.ipa
+app.apk
+IonicTodo-simulator.ipa
 
 /.sourcemaps
 /.versions
@@ -68,3 +72,18 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Carpetas generadas por el build — no van al repo
+dist/
+www/
+
+# Dependencias nativas de iOS — se regeneran con "npx cap sync"
+ios/App/Pods/
+ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/
+ios/App/build/
+
+# Dependencias nativas de Android — se regeneran con "npx cap sync"
+android/.gradle/
+android/app/build/
+android/build/
+EOF

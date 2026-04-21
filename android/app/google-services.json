@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "236299290422",
+    "project_id": "ionic-todo-cdee1",
+    "storage_bucket": "ionic-todo-cdee1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:236299290422:android:24073af47750c067b35597",
+        "android_client_info": {
+          "package_name": "io.ionic.starter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByLvMcM1wXIaAQfAzF0C0_JPZf-ZVwkxo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
