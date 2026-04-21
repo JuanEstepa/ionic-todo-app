@@ -1,15 +1,33 @@
 /**
- * @file task.service.ts
- * @description Servicio central para la gestión de tareas (To-Do).
+ * @file task.ts
+ * @description Servicio de tareas — optimizado para rendimiento.
  *
- * Cambios Angular 19+:
- *  - inject() reemplaza la inyección por constructor.
- *  - Signals (signal, computed) complementan el BehaviorSubject para
- *    exponer estado derivado de forma más ergonómica en templates modernos.
- *  - toSignal() convierte el Observable en un Signal para uso directo
- *    con la nueva sintaxis de control flow (@for, @if).
+ * ── OPTIMIZACIONES DE ESTA VERSIÓN ────────────────────────────────────────
  *
- * Patrón: Repository + Reactive State (BehaviorSubject + Signals).
+ * 1. PARSEO ÚNICO DE localStorage
+ *    Antes: loadFromStorage() se llamaba DOS veces en la inicialización
+ *    (una para el BehaviorSubject y otra para el Signal), lo que causaba
+ *    dos JSON.parse() del mismo string en cada arranque de la app.
+ *    Ahora: se parsea una vez, se guarda en una constante, y ambos
+ *    (BehaviorSubject y Signal) se inicializan con la misma referencia.
+ *
+ * 2. ESCRITURAS DIFERIDAS A localStorage (debounce 300ms)
+ *    localStorage.setItem() es una operación SÍNCRONA que bloquea el
+ *    hilo principal. Si el usuario hace toggle rápido de 5 tareas en
+ *    300ms, sin debounce haríamos 5 escrituras al disco. Con debounce,
+ *    cancelamos las anteriores y hacemos solo 1 escritura al final.
+ *    Esto es especialmente importante en móvil donde el I/O es más lento.
+ *
+ * 3. INMUTABILIDAD ESTRICTA EN TODAS LAS MUTACIONES
+ *    Cada método que modifica tareas crea un nuevo array con spread [...].
+ *    Esto es crítico para ChangeDetectionStrategy.OnPush: Angular compara
+ *    referencias de arrays. Si mutamos el array existente (push, splice),
+ *    OnPush no detecta el cambio y la UI no se actualiza.
+ *
+ * 4. SIGNALS COMPUTED PARA CONTEOS
+ *    pendingCount y completedCount son computed(): Angular los recalcula
+ *    solo cuando tasks() cambia. Sin computed(), cada lectura en el
+ *    template ejecutaría el filter() completo en cada ciclo de detección.
  */
 
 import { Injectable, computed, signal } from '@angular/core';
@@ -21,36 +39,37 @@ const STORAGE_KEY = 'todo_tasks';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
-
-  // ─────────────────────────────────────────────────────────────
-  // ESTADO REACTIVO
-  // ─────────────────────────────────────────────────────────────
-
+  // ─── INICIALIZACIÓN ÚNICA ─────────────────────────────────────
   /**
-   * BehaviorSubject privado: fuente de verdad de la lista de tareas.
-   * Cualquier mutación pasa por updateState() para garantizar
-   * que memoria y localStorage estén siempre sincronizados.
+   * Parseamos localStorage UNA sola vez al arrancar el servicio.
+   * Tanto el BehaviorSubject como el Signal comparten esta referencia
+   * inicial, evitando el doble JSON.parse() de la versión anterior.
    */
-  private readonly _tasks$ = new BehaviorSubject<Task[]>(this.loadFromStorage());
+  private readonly initialTasks = this.loadFromStorage();
 
-  /** Observable público para suscripciones con async pipe */
+  private readonly _tasks$ = new BehaviorSubject<Task[]>(this.initialTasks);
   readonly tasks$: Observable<Task[]> = this._tasks$.asObservable();
+  readonly tasks = signal<Task[]>(this.initialTasks);
 
+  // ─── SIGNALS DERIVADOS (computed) ────────────────────────────
   /**
-   * Signal que expone la lista completa como estado reactivo.
-   * Los componentes con nueva sintaxis @for pueden leerlo sin async pipe.
+   * computed() memoiza el resultado: Angular solo recalcula cuando
+   * tasks() emite un nuevo valor. Sin computed(), el template llamaría
+   * filter() en cada ciclo de detección aunque las tareas no hayan cambiado.
    */
-  readonly tasks = signal<Task[]>(this.loadFromStorage());
-
-  /** Signal derivado: número de tareas pendientes (para badges) */
-  readonly pendingCount = computed(() =>
-    this.tasks().filter(t => !t.completed).length
+  readonly pendingCount = computed(
+    () => this.tasks().filter((t) => !t.completed).length,
+  );
+  readonly completedCount = computed(
+    () => this.tasks().filter((t) => t.completed).length,
   );
 
-  /** Signal derivado: número de tareas completadas */
-  readonly completedCount = computed(() =>
-    this.tasks().filter(t => t.completed).length
-  );
+  // ─── DEBOUNCE PARA localStorage ──────────────────────────────
+  /**
+   * Timer del debounce. Lo guardamos para poder cancelarlo si llega
+   * otra escritura antes de que se dispare.
+   */
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ─────────────────────────────────────────────────────────────
   // LECTURA
@@ -60,43 +79,32 @@ export class TaskService {
     return this.tasks$;
   }
 
-  /**
-   * Observable filtrado por categoría.
-   * 'all' retorna todas; null retorna tareas sin categoría.
-   */
   getTasksByCategory(categoryId: string | null | 'all'): Observable<Task[]> {
     return this.tasks$.pipe(
-      map(tasks =>
+      map((tasks) =>
         categoryId === 'all'
           ? tasks
-          : tasks.filter(t => t.categoryId === categoryId)
-      )
+          : tasks.filter((t) => t.categoryId === categoryId),
+      ),
     );
   }
 
   getPendingTasks(): Observable<Task[]> {
-    return this.tasks$.pipe(map(tasks => tasks.filter(t => !t.completed)));
+    return this.tasks$.pipe(map((tasks) => tasks.filter((t) => !t.completed)));
   }
 
   getCompletedTasks(): Observable<Task[]> {
-    return this.tasks$.pipe(map(tasks => tasks.filter(t => t.completed)));
+    return this.tasks$.pipe(map((tasks) => tasks.filter((t) => t.completed)));
   }
 
   getTaskById(id: string): Task | undefined {
-    return this._tasks$.getValue().find(t => t.id === id);
+    return this._tasks$.getValue().find((t) => t.id === id);
   }
 
   // ─────────────────────────────────────────────────────────────
   // ESCRITURA (CRUD)
   // ─────────────────────────────────────────────────────────────
 
-  /**
-   * Crea una nueva tarea y la agrega al estado.
-   *
-   * @param title      - Texto de la tarea (se sanitiza quitando espacios)
-   * @param categoryId - Categoría opcional; null si no se asigna
-   * @returns La tarea creada, o null si el título está vacío
-   */
   addTask(title: string, categoryId: string | null = null): Task | null {
     const cleanTitle = title.trim();
     if (!cleanTitle) return null;
@@ -109,62 +117,55 @@ export class TaskService {
       createdAt: new Date(),
     };
 
+    // Spread [...] crea un nuevo array → OnPush detecta el cambio
     this.updateState([...this._tasks$.getValue(), newTask]);
     return newTask;
   }
 
-  /**
-   * Actualiza el título de una tarea existente.
-   * Usa spread operator para mantener inmutabilidad del objeto.
-   */
   updateTaskTitle(id: string, newTitle: string): boolean {
     const cleanTitle = newTitle.trim();
     if (!cleanTitle) return false;
 
     const tasks = this._tasks$.getValue();
-    const idx = tasks.findIndex(t => t.id === id);
+    const idx = tasks.findIndex((t) => t.id === id);
     if (idx === -1) return false;
 
-    const updated = [...tasks];
-    updated[idx] = { ...updated[idx], title: cleanTitle };
+    // map() devuelve un nuevo array con el objeto modificado (inmutabilidad)
+    const updated = tasks.map((t, i) =>
+      i === idx ? { ...t, title: cleanTitle } : t,
+    );
     this.updateState(updated);
     return true;
   }
 
-  /** Alterna el estado completado/pendiente de una tarea */
   toggleTask(id: string): void {
-    const updated = this._tasks$.getValue().map(t =>
-      t.id === id ? { ...t, completed: !t.completed } : t
-    );
+    const updated = this._tasks$
+      .getValue()
+      .map((t) => (t.id === id ? { ...t, completed: !t.completed } : t));
     this.updateState(updated);
   }
 
-  /** Asigna o quita la categoría de una tarea */
   assignCategory(taskId: string, categoryId: string | null): void {
-    const updated = this._tasks$.getValue().map(t =>
-      t.id === taskId ? { ...t, categoryId } : t
-    );
+    const updated = this._tasks$
+      .getValue()
+      .map((t) => (t.id === taskId ? { ...t, categoryId } : t));
     this.updateState(updated);
   }
 
-  /** Elimina una tarea por ID */
   deleteTask(id: string): void {
-    this.updateState(this._tasks$.getValue().filter(t => t.id !== id));
+    this.updateState(this._tasks$.getValue().filter((t) => t.id !== id));
   }
 
-  /** Elimina todas las tareas completadas de una vez */
   clearCompleted(): void {
-    this.updateState(this._tasks$.getValue().filter(t => !t.completed));
+    this.updateState(this._tasks$.getValue().filter((t) => !t.completed));
   }
 
-  /**
-   * Desvincula una categoría eliminada de todas las tareas que la tenían.
-   * Llamado por CategoryService al borrar una categoría.
-   */
   removeCategoryFromTasks(categoryId: string): void {
-    const updated = this._tasks$.getValue().map(t =>
-      t.categoryId === categoryId ? { ...t, categoryId: null } : t
-    );
+    const updated = this._tasks$
+      .getValue()
+      .map((t) =>
+        t.categoryId === categoryId ? { ...t, categoryId: null } : t,
+      );
     this.updateState(updated);
   }
 
@@ -173,15 +174,39 @@ export class TaskService {
   // ─────────────────────────────────────────────────────────────
 
   /**
-   * Punto único de mutación: actualiza BehaviorSubject, Signal y localStorage.
-   * Al mantener ambas representaciones (Observable + Signal) sincronizadas
-   * desde aquí, los componentes que usen cualquiera de los dos siempre
-   * ven el mismo estado.
+   * Punto único de mutación del estado.
+   * Actualiza BehaviorSubject y Signal de forma síncrona (la UI responde
+   * inmediatamente), y programa la escritura a localStorage con debounce
+   * para no bloquear el hilo principal en ráfagas de cambios rápidos.
    */
   private updateState(tasks: Task[]): void {
     this._tasks$.next(tasks);
     this.tasks.set(tasks);
-    this.saveToStorage(tasks);
+    this.scheduleSave(tasks);
+  }
+
+  /**
+   * Escritura diferida a localStorage con debounce de 300ms.
+   *
+   * Flujo sin debounce (malo):
+   *   toggle tarea 1 → setItem() bloquea 2ms
+   *   toggle tarea 2 → setItem() bloquea 2ms   (total: 4ms bloqueados)
+   *   toggle tarea 3 → setItem() bloquea 2ms   (total: 6ms bloqueados)
+   *
+   * Flujo con debounce (bueno):
+   *   toggle tarea 1 → programa escritura en 300ms
+   *   toggle tarea 2 → cancela la anterior, programa nueva en 300ms
+   *   toggle tarea 3 → cancela la anterior, programa nueva en 300ms
+   *   ...300ms después → setItem() bloquea 2ms UNA sola vez
+   */
+  private scheduleSave(tasks: Task[]): void {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+    }
+    this.saveTimer = setTimeout(() => {
+      this.saveToStorage(tasks);
+      this.saveTimer = null;
+    }, 300);
   }
 
   private loadFromStorage(): Task[] {

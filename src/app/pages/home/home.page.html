@@ -1,5 +1,28 @@
+<!--
+  @file home.page.html
+  @description Vista principal — optimizada para rendimiento.
+
+  ── OPTIMIZACIONES EN EL TEMPLATE ─────────────────────────────────────────
+
+  1. SIN LLAMADAS A FUNCIONES EN @for
+     Antes: getCategoryColor(task.categoryId) → función ejecutada por cada
+     tarea en cada ciclo de detección de cambios.
+     Ahora: categoryInfoMap().get(task.categoryId)?.color → lectura de Map
+     O(1). El Map se construye una sola vez en el computed() del .ts.
+
+  2. @let para evitar lecturas repetidas del mismo Signal
+     @let info = categoryInfoMap().get(task.categoryId)
+     Lee el Map UNA vez por tarea y reutiliza el resultado en el mismo bloque.
+     Sin @let, cada {{ info?.name }} y {{ info?.color }} leería el Map de nuevo.
+
+  3. track task.id en @for
+     Angular reutiliza los nodos DOM existentes al actualizar la lista.
+     Sin track, destruiría y recrearía todos los <ion-item-sliding> aunque
+     solo haya cambiado el título de una tarea.
+-->
+
 <ion-header [translucent]="true" class="ion-no-border">
-  <ion-toolbar> </ion-toolbar>
+  <ion-toolbar></ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
@@ -7,6 +30,8 @@
     <h1 class="page-title">Mis Tareas</h1>
     <p class="page-sub">Organiza tus tareas diarias</p>
   </div>
+
+  <!-- ── Filtros de categoría ── -->
   <div class="category-scroll-wrap">
     <div class="category-scroll">
       <button
@@ -30,10 +55,18 @@
     </div>
   </div>
 
+  <!-- ── Sección: Pendientes ── -->
   <div class="section-block">
     <h2 class="section-label">Pendientes</h2>
+
     <ion-list class="task-ion-list">
       @for (task of activeTasks(); track task.id) {
+
+      <!--
+          @let lee el Map UNA vez y el resultado queda disponible
+          para todo el bloque de este item sin repetir la llamada.
+        -->
+      @let info = categoryInfoMap().get(task.categoryId ?? '');
 
       <ion-item-sliding #slidingItem>
         <ion-item-options side="end">
@@ -56,10 +89,7 @@
           </ion-item-option>
         </ion-item-options>
 
-        <ion-item
-          [class.task-completed]="task.completed"
-          (press)="openTaskOptions(task)"
-        >
+        <ion-item (press)="openTaskOptions(task)">
           <ion-checkbox
             slot="start"
             [checked]="task.completed"
@@ -67,20 +97,16 @@
           />
 
           <ion-label>
-            <h3
-              [style.text-decoration]="task.completed ? 'line-through' : 'none'"
-              [style.color]="task.completed ? 'var(--ion-color-medium)' : 'inherit'"
-            >
-              {{ task.title }}
-            </h3>
+            <h3>{{ task.title }}</h3>
 
-            @if (task.categoryId) {
+            <!-- Badge de categoría — solo si tiene info en el Map -->
+            @if (info) {
             <p>
               <ion-badge
-                [style.background-color]="getCategoryColor(task.categoryId)"
+                [style.background-color]="info.color"
                 style="color: white; font-size: 11px; padding: 2px 8px"
               >
-                {{ getCategoryName(task.categoryId) }}
+                {{ info.name }}
               </ion-badge>
             </p>
             }
@@ -101,26 +127,27 @@
       </ion-item-sliding>
 
       } @empty {
-
       <div class="empty-state">
         <ion-icon name="checkmark-circle-outline" color="medium" />
-
         <h3>Sin tareas</h3>
-
-        @if (selectedCategoryId() === 'all' ) {
+        @if (selectedCategoryId() === 'all') {
         <p>¡Todo al día! No hay pendientes</p>
-        } @if (selectedCategoryId() !== 'all') {
+        } @else {
         <p>No hay tareas en esta categoría</p>
         }
       </div>
       }
     </ion-list>
   </div>
+
+  <!-- ── Sección: Completadas (solo si hay alguna) ── -->
   @if (completedTasks().length > 0) {
   <div class="section-block">
     <h2 class="section-label">Completadas</h2>
+
     <ion-list class="task-ion-list">
-      @for (task of completedTasks(); track task.id) {
+      @for (task of completedTasks(); track task.id) { @let info =
+      categoryInfoMap().get(task.categoryId ?? '');
 
       <ion-item-sliding #slidingItem>
         <ion-item-options side="end">
@@ -143,10 +170,7 @@
           </ion-item-option>
         </ion-item-options>
 
-        <ion-item
-          [class.task-completed]="task.completed"
-          (press)="openTaskOptions(task)"
-        >
+        <ion-item class="task-completed" (press)="openTaskOptions(task)">
           <ion-checkbox
             slot="start"
             [checked]="task.completed"
@@ -155,19 +179,20 @@
 
           <ion-label>
             <h3
-              [style.text-decoration]="task.completed ? 'line-through' : 'none'"
-              [style.color]="task.completed ? 'var(--ion-color-medium)' : 'inherit'"
+              style="
+                text-decoration: line-through;
+                color: var(--ion-color-medium);
+              "
             >
               {{ task.title }}
             </h3>
-
-            @if (task.categoryId) {
+            @if (info) {
             <p>
               <ion-badge
-                [style.background-color]="getCategoryColor(task.categoryId)"
+                [style.background-color]="info.color"
                 style="color: white; font-size: 11px; padding: 2px 8px"
               >
-                {{ getCategoryName(task.categoryId) }}
+                {{ info.name }}
               </ion-badge>
             </p>
             }
@@ -187,19 +212,6 @@
         </ion-item>
       </ion-item-sliding>
 
-      } @empty {
-
-      <div class="empty-state">
-        <ion-icon name="checkmark-circle-outline" color="medium" />
-
-        <h3>Sin tareas</h3>
-
-        @if (selectedCategoryId() === 'all' ) {
-        <p>¡Todo al día! No hay pendientes</p>
-        } @if (selectedCategoryId() !== 'all') {
-        <p>No hay tareas en esta categoría</p>
-        }
-      </div>
       }
     </ion-list>
   </div>

@@ -1,3 +1,44 @@
+/**
+ * @file home.page.ts
+ * @description Página principal — optimizada para rendimiento.
+ *
+ * ── OPTIMIZACIONES DE ESTA VERSIÓN ────────────────────────────────────────
+ *
+ * 1. ELIMINACIÓN DE FUNCIONES EN EL TEMPLATE (el cambio más importante)
+ *
+ *    El problema:
+ *    En el template anterior existían llamadas como:
+ *      getCategoryColor(task.categoryId)
+ *      getCategoryName(task.categoryId)
+ *
+ *    Angular ejecuta estas funciones en CADA ciclo de change detection,
+ *    para CADA tarea visible. Con 50 tareas → 100 llamadas por ciclo.
+ *    Con OnPush el impacto es menor, pero sigue siendo innecesario.
+ *
+ *    La solución:
+ *    categoryInfoMap es un computed() que construye un Map<categoryId, {name, color}>
+ *    UNA sola vez cuando las categorías cambian. El template accede con
+ *    categoryInfoMap().get(task.categoryId) que es O(1) y no es una función
+ *    sino una lectura de Signal — Angular la trata de forma óptima.
+ *
+ * 2. COMPUTED PARA FILTRADO
+ *    filteredTasks, activeTasks y completedTasks son computed() que se
+ *    recalculan solo cuando allTasks() o selectedCategoryId() cambian.
+ *    No hay suscripciones manuales ni pipes en el template.
+ *
+ * 3. ChangeDetectionStrategy.OnPush
+ *    Angular solo re-renderiza este componente cuando:
+ *    - Un Signal leído en el template cambia de valor
+ *    - Se emite un evento de usuario (@Output, event binding)
+ *    - Se llama explícitamente a markForCheck()
+ *    Esto elimina re-renders innecesarios en cada ciclo global de la app.
+ *
+ * 4. track por id en @for
+ *    Angular reutiliza los nodos DOM existentes al reordenar/actualizar
+ *    la lista. Sin track, destruiría y recrearía todos los elementos
+ *    aunque solo haya cambiado uno.
+ */
+
 import {
   Component,
   OnInit,
@@ -6,6 +47,7 @@ import {
   signal,
   computed,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -37,6 +79,7 @@ import {
   ellipsisVertical,
   checkmarkDoneOutline,
   pricetagsOutline,
+  checkmarkCircleOutline,
 } from 'ionicons/icons';
 
 import { TaskService } from '../../services/task';
@@ -52,6 +95,8 @@ import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
+    RouterLink,
     IonHeader,
     IonToolbar,
     IonContent,
@@ -66,11 +111,11 @@ import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-
     IonItemSliding,
     IonItemOptions,
     IonItemOption,
-    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage implements OnInit {
+  // ─── DEPENDENCIAS ─────────────────────────────────────────────
   private readonly taskService = inject(TaskService);
   private readonly categoryService = inject(CategoryService);
   private readonly alertCtrl = inject(AlertController);
@@ -78,8 +123,10 @@ export class HomePage implements OnInit {
   private readonly actionSheetCtrl = inject(ActionSheetController);
   private readonly modalCtrl = inject(ModalController);
 
+  // ─── ESTADO LOCAL ─────────────────────────────────────────────
   readonly selectedCategoryId = signal<string>('all');
 
+  // ─── SIGNALS DE DATOS ─────────────────────────────────────────
   readonly allTasks = toSignal(this.taskService.getAllTasks(), {
     initialValue: [] as Task[],
   });
@@ -87,6 +134,12 @@ export class HomePage implements OnInit {
     initialValue: [] as Category[],
   });
 
+  // ─── COMPUTED: FILTRADO ───────────────────────────────────────
+
+  /**
+   * Lista filtrada por categoría seleccionada.
+   * Se recalcula solo cuando allTasks() o selectedCategoryId() cambian.
+   */
   readonly filteredTasks = computed(() => {
     const catId = this.selectedCategoryId();
     const tasks = this.allTasks();
@@ -95,12 +148,39 @@ export class HomePage implements OnInit {
       : tasks.filter((t) => t.categoryId === catId);
   });
 
+  /**
+   * Tareas pendientes del filtro activo.
+   * Depende de filteredTasks() — se recalcula en cadena automáticamente.
+   */
   readonly activeTasks = computed(() =>
     this.filteredTasks().filter((t) => !t.completed),
   );
   readonly completedTasks = computed(() =>
     this.filteredTasks().filter((t) => t.completed),
   );
+
+  // ─── COMPUTED: MAPA DE CATEGORÍAS ────────────────────────────
+
+  /**
+   * OPTIMIZACIÓN CLAVE: Map<categoryId, {name, color}> pre-construido.
+   *
+   * El template YA NO llama getCategoryColor() ni getCategoryName()
+   * en cada tarea. En cambio lee este Map que se construye una sola vez
+   * cuando la lista de categorías cambia.
+   *
+   * Antes (O(n) por tarea por render):
+   *   getCategoryColor(task.categoryId) → Array.find() en cada llamada
+   *
+   * Ahora (O(1) por tarea, O(n) solo cuando cambian categorías):
+   *   categoryInfoMap().get(task.categoryId)?.color
+   */
+  readonly categoryInfoMap = computed(() => {
+    const m = new Map<string, { name: string; color: string }>();
+    for (const cat of this.categories()) {
+      m.set(cat.id, { name: cat.name, color: cat.color });
+    }
+    return m;
+  });
 
   constructor() {
     addIcons({
@@ -110,14 +190,19 @@ export class HomePage implements OnInit {
       ellipsisVertical,
       checkmarkDoneOutline,
       pricetagsOutline,
+      checkmarkCircleOutline,
     });
   }
 
   ngOnInit(): void {}
 
+  // ─── FILTROS ──────────────────────────────────────────────────
+
   onCategoryChange(categoryId: string): void {
     this.selectedCategoryId.set(categoryId);
   }
+
+  // ─── ACCIONES ─────────────────────────────────────────────────
 
   toggleTask(taskId: string): void {
     this.taskService.toggleTask(taskId);
@@ -209,15 +294,7 @@ export class HomePage implements OnInit {
     }
   }
 
-  getCategoryColor(categoryId: string | null): string {
-    if (!categoryId) return '#9b98b8';
-    return this.categoryService.getCategoryById(categoryId)?.color ?? '#9b98b8';
-  }
-
-  getCategoryName(categoryId: string | null): string {
-    if (!categoryId) return '';
-    return this.categoryService.getCategoryById(categoryId)?.name ?? '';
-  }
+  // ─── PRIVADOS ─────────────────────────────────────────────────
 
   private async showToast(
     message: string,
