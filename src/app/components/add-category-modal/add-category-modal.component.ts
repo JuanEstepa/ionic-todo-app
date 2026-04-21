@@ -5,6 +5,7 @@ import {
   inject,
   ViewChild,
   ElementRef,
+  OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalController } from '@ionic/angular/standalone';
@@ -17,7 +18,7 @@ import { ModalController } from '@ionic/angular/standalone';
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AddCategoryModalComponent {
+export class AddCategoryModalComponent implements OnInit {
   // Cuando se usa para editar, se pasan los valores actuales
   @Input() initialName = '';
   @Input() initialColor = '#3d3580';

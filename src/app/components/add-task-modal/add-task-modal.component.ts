@@ -5,13 +5,14 @@ import {
   Input,
   ViewChild,
   ElementRef,
+  OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonIcon, ModalController } from '@ionic/angular/standalone';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { addIcons } from 'ionicons';
-import { mailOutline } from 'ionicons/icons';
+import { pricetagOutline } from 'ionicons/icons';
 import { RemoteConfigService } from '../../services/remote-config.service';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
@@ -24,7 +25,7 @@ import { Category } from '../../models/category.model';
   imports: [FormsModule, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AddTaskModalComponent {
+export class AddTaskModalComponent implements OnInit {
   private readonly modalCtrl = inject(ModalController);
   private readonly categoryService = inject(CategoryService);
   private readonly router = inject(Router);
@@ -49,7 +50,7 @@ export class AddTaskModalComponent {
   }
 
   constructor() {
-    addIcons({ mailOutline });
+    addIcons({ pricetagOutline });
   }
 
   ionViewDidEnter(): void {
