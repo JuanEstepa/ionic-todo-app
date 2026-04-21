@@ -12,7 +12,7 @@ import { IonIcon, ModalController } from '@ionic/angular/standalone';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { addIcons } from 'ionicons';
 import { mailOutline } from 'ionicons/icons';
-
+import { RemoteConfigService } from '../../services/remote-config.service.ts';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
 
@@ -29,6 +29,7 @@ export class AddTaskModalComponent {
   private readonly categoryService = inject(CategoryService);
   private readonly router = inject(Router);
 
+  readonly remoteConfig = inject(RemoteConfigService);
   readonly categories = toSignal(this.categoryService.getAllCategories(), {
     initialValue: [] as Category[],
   });

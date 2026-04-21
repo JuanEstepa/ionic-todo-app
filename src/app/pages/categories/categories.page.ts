@@ -6,13 +6,23 @@ import {
   computed,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import {
-  IonHeader, IonToolbar, IonContent, IonFooter, IonIcon,
-  AlertController, ToastController, ModalController,
+  IonHeader,
+  IonToolbar,
+  IonContent,
+  IonIcon,
+  AlertController,
+  ToastController,
+  ModalController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, createOutline, trashOutline, pricetagsOutline, checkmarkDoneOutline } from 'ionicons/icons';
+import {
+  addOutline,
+  createOutline,
+  trashOutline,
+  pricetagsOutline,
+  checkmarkDoneOutline,
+} from 'ionicons/icons';
 
 import { CategoryService } from '../../services/category';
 import { TaskService } from '../../services/task';
@@ -24,25 +34,23 @@ import { AddCategoryModalComponent } from '../../components/add-category-modal/a
   templateUrl: './categories.page.html',
   styleUrls: ['./categories.page.scss'],
   standalone: true,
-  imports: [
-    IonHeader, IonToolbar, IonContent, IonFooter, IonIcon, RouterLink,
-  ],
+  imports: [IonHeader, IonToolbar, IonContent, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CategoriesPage implements OnInit {
-
   private readonly categoryService = inject(CategoryService);
-  private readonly taskService     = inject(TaskService);
-  private readonly alertCtrl       = inject(AlertController);
-  private readonly toastCtrl       = inject(ToastController);
-  private readonly modalCtrl       = inject(ModalController);
+  private readonly taskService = inject(TaskService);
+  private readonly alertCtrl = inject(AlertController);
+  private readonly toastCtrl = inject(ToastController);
+  private readonly modalCtrl = inject(ModalController);
 
-  readonly categories = toSignal(
-    this.categoryService.getAllCategories(),
-    { initialValue: [] as Category[] }
-  );
+  readonly categories = toSignal(this.categoryService.getAllCategories(), {
+    initialValue: [] as Category[],
+  });
 
-  private readonly allTasks = toSignal(this.taskService.getAllTasks(), { initialValue: [] });
+  private readonly allTasks = toSignal(this.taskService.getAllTasks(), {
+    initialValue: [],
+  });
 
   readonly taskCountMap = computed(() => {
     const map = new Map<string, number>();
@@ -55,7 +63,13 @@ export class CategoriesPage implements OnInit {
   });
 
   constructor() {
-    addIcons({ addOutline, createOutline, trashOutline, pricetagsOutline, checkmarkDoneOutline });
+    addIcons({
+      addOutline,
+      createOutline,
+      trashOutline,
+      pricetagsOutline,
+      checkmarkDoneOutline,
+    });
   }
 
   ngOnInit(): void {}
@@ -89,7 +103,7 @@ export class CategoriesPage implements OnInit {
       handle: true,
       cssClass: 'add-category-modal',
       componentProps: {
-        initialName:  category.name,
+        initialName: category.name,
         initialColor: category.color,
       },
     });
@@ -97,7 +111,11 @@ export class CategoriesPage implements OnInit {
 
     const { data } = await modal.onWillDismiss();
     if (data?.name) {
-      const updated = this.categoryService.updateCategory(category.id, data.name, data.color);
+      const updated = this.categoryService.updateCategory(
+        category.id,
+        data.name,
+        data.color,
+      );
       if (updated) {
         this.showToast('Categoría actualizada', 'success');
       } else {
@@ -107,8 +125,9 @@ export class CategoriesPage implements OnInit {
   }
 
   async confirmDeleteCategory(category: Category): Promise<void> {
-    const count   = this.taskCountMap().get(category.id) ?? 0;
-    const taskMsg = count > 0 ? `\n\n${count} tarea(s) perderán esta categoría.` : '';
+    const count = this.taskCountMap().get(category.id) ?? 0;
+    const taskMsg =
+      count > 0 ? `\n\n${count} tarea(s) perderán esta categoría.` : '';
 
     const alert = await this.alertCtrl.create({
       header: 'Eliminar categoría',
@@ -132,8 +151,16 @@ export class CategoriesPage implements OnInit {
     return this.taskCountMap().get(categoryId) ?? 0;
   }
 
-  private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success'): Promise<void> {
-    const toast = await this.toastCtrl.create({ message, duration: 2000, color, position: 'bottom' });
+  private async showToast(
+    message: string,
+    color: 'success' | 'danger' | 'warning' = 'success',
+  ): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 2000,
+      color,
+      position: 'bottom',
+    });
     await toast.present();
   }
 }

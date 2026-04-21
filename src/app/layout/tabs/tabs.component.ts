@@ -29,7 +29,6 @@ import {
   pricetagsOutline,
 } from 'ionicons/icons';
 
-import { ModalController as MC } from '@ionic/angular/standalone';
 import { TaskService } from '../../services/task';
 import { RemoteConfigService } from '../../services/remote-config.service.ts';
 import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-modal.component';

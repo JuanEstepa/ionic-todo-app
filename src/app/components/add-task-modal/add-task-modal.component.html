@@ -38,10 +38,12 @@
       </button>
     }
 
-    <button class="cat-chip new-chip" (click)="goToCategories()">
-      <span class="plus-icon">+</span>
-      Nueva
-    </button>
+    @if (remoteConfig.showCategoriesTab()) {
+      <button class="cat-chip new-chip" (click)="goToCategories()">
+        <span class="plus-icon">+</span>
+        Nueva
+      </button>
+    }
   </div>
 
   <div class="sheet-actions">
