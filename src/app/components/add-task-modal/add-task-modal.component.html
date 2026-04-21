@@ -1,0 +1,53 @@
+<div class="sheet-wrap">
+  <div class="sheet-handle"></div>
+
+  <p class="sheet-title">
+    {{ isEdit ? "Editar tarea" : "Nueva tarea" }}
+  </p>
+
+  <input
+    #titleInput
+    class="task-name-input"
+    [(ngModel)]="taskTitle"
+    placeholder="Nombre de la tarea"
+    (keyup.enter)="save()"
+    autofocus
+  />
+
+  <div class="section-title">Categorias</div>
+
+  <div class="category-chips">
+    <button
+      class="cat-chip"
+      [class.active]="selectedCategoryId === null"
+      (click)="selectCategory(null)"
+    >
+      <ion-icon name="mail-outline" class="chip-icon" />
+      N/A
+    </button>
+
+    @for (cat of categories(); track cat.id) {
+      <button
+        class="cat-chip"
+        [class.active]="selectedCategoryId === cat.id"
+        [style.--cat-color]="cat.color"
+        (click)="selectCategory(cat.id)"
+      >
+        <span class="cat-dot"></span>
+        {{ cat.name }}
+      </button>
+    }
+
+    <button class="cat-chip new-chip" (click)="goToCategories()">
+      <span class="plus-icon">+</span>
+      Nueva
+    </button>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-cancel" (click)="cancel()">Cancel</button>
+    <button class="btn-save" (click)="save()" [disabled]="!taskTitle.trim()">
+      {{ isEdit ? "Editar" : "Guardar Tarea" }}
+    </button>
+  </div>
+</div>

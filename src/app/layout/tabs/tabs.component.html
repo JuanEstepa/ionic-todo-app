@@ -1,0 +1,19 @@
+<ion-tabs>
+  <ion-tab-bar slot="bottom" class="app-tab-bar">
+    <ion-tab-button tab="home">
+      <ion-icon name="checkmark-done-outline" />
+      <ion-label>Tareas</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button (click)="openAddTaskSheet()">
+      <div class="tab-fab">
+        <ion-icon name="add-outline" class="fab-icon" />
+      </div>
+    </ion-tab-button>
+
+    <ion-tab-button tab="categories">
+      <ion-icon name="pricetags-outline" />
+      <ion-label>Categorias</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>

@@ -6,30 +6,44 @@ import {
   signal,
   computed,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
-  IonHeader, IonToolbar, IonTitle, IonContent, IonFooter,
-  IonList, IonItem, IonLabel, IonBadge, IonChip,
-  IonButton, IonButtons, IonIcon, IonInput, IonCheckbox,
-  IonSegment, IonSegmentButton, IonItemSliding,
-  IonItemOptions, IonItemOption,
-  AlertController, ToastController, ActionSheetController,
+  IonHeader,
+  IonToolbar,
+  IonContent,
+  IonFooter,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonBadge,
+  IonButton,
+  IonIcon,
+  IonCheckbox,
+  IonItemSliding,
+  IonItemOptions,
+  IonItemOption,
+  AlertController,
+  ToastController,
+  ActionSheetController,
+  ModalController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  addOutline, trashOutline, createOutline, ellipsisVertical,
-  checkmarkDoneOutline, pricetagOutline,
+  addOutline,
+  trashOutline,
+  createOutline,
+  ellipsisVertical,
+  checkmarkDoneOutline,
+  pricetagsOutline,
 } from 'ionicons/icons';
 
 import { TaskService } from '../../services/task';
 import { CategoryService } from '../../services/category';
 import { Task } from '../../models/task.model';
 import { Category } from '../../models/category.model';
-
-type StatusFilter = 'all' | 'pending' | 'completed';
+import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -38,51 +52,64 @@ type StatusFilter = 'all' | 'pending' | 'completed';
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonContent, IonFooter,
-    IonList, IonItem, IonLabel, IonBadge, IonChip,
-    IonButton, IonButtons, IonIcon, IonInput, IonCheckbox,
-    IonSegment, IonSegmentButton, IonItemSliding,
-    IonItemOptions, IonItemOption, RouterLink,
+    IonHeader,
+    IonToolbar,
+    IonContent,
+    IonFooter,
+    IonList,
+    IonItem,
+    IonLabel,
+    IonBadge,
+    IonButton,
+    IonIcon,
+    IonCheckbox,
+    IonItemSliding,
+    IonItemOptions,
+    IonItemOption,
+    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage implements OnInit {
-
-  private readonly taskService     = inject(TaskService);
+  private readonly taskService = inject(TaskService);
   private readonly categoryService = inject(CategoryService);
-  private readonly alertCtrl       = inject(AlertController);
-  private readonly toastCtrl       = inject(ToastController);
+  private readonly alertCtrl = inject(AlertController);
+  private readonly toastCtrl = inject(ToastController);
   private readonly actionSheetCtrl = inject(ActionSheetController);
+  private readonly modalCtrl = inject(ModalController);
 
   readonly selectedCategoryId = signal<string>('all');
-  readonly selectedStatus = signal<StatusFilter>('all');
 
-  newTaskTitle = '';
-
-  readonly allTasks    = toSignal(this.taskService.getAllTasks(),    { initialValue: [] as Task[] });
-  readonly categories  = toSignal(this.categoryService.getAllCategories(), { initialValue: [] as Category[] });
-  readonly pendingCount = this.taskService.pendingCount;
+  readonly allTasks = toSignal(this.taskService.getAllTasks(), {
+    initialValue: [] as Task[],
+  });
+  readonly categories = toSignal(this.categoryService.getAllCategories(), {
+    initialValue: [] as Category[],
+  });
 
   readonly filteredTasks = computed(() => {
-    let tasks = this.allTasks();
-
     const catId = this.selectedCategoryId();
-    if (catId !== 'all') {
-      tasks = tasks.filter(t => t.categoryId === catId);
-    }
-
-    const status = this.selectedStatus();
-    if (status === 'pending')   tasks = tasks.filter(t => !t.completed);
-    if (status === 'completed') tasks = tasks.filter(t => t.completed);
-
-    return tasks;
+    const tasks = this.allTasks();
+    return catId === 'all'
+      ? tasks
+      : tasks.filter((t) => t.categoryId === catId);
   });
+
+  readonly activeTasks = computed(() =>
+    this.filteredTasks().filter((t) => !t.completed),
+  );
+  readonly completedTasks = computed(() =>
+    this.filteredTasks().filter((t) => t.completed),
+  );
 
   constructor() {
     addIcons({
-      addOutline, trashOutline, createOutline,
-      ellipsisVertical, checkmarkDoneOutline, pricetagOutline,
+      addOutline,
+      trashOutline,
+      createOutline,
+      ellipsisVertical,
+      checkmarkDoneOutline,
+      pricetagsOutline,
     });
   }
 
@@ -90,24 +117,6 @@ export class HomePage implements OnInit {
 
   onCategoryChange(categoryId: string): void {
     this.selectedCategoryId.set(categoryId);
-  }
-
-  onStatusChange(status: StatusFilter): void {
-    this.selectedStatus.set(status);
-  }
-
-  async addTask(): Promise<void> {
-    const result = this.taskService.addTask(
-      this.newTaskTitle,
-      this.selectedCategoryId() === 'all' ? null : this.selectedCategoryId()
-    );
-
-    if (result) {
-      this.newTaskTitle = '';
-      await this.showToast('Tarea agregada', 'success');
-    } else {
-      await this.showToast('Escribe un nombre para la tarea', 'warning');
-    }
   }
 
   toggleTask(taskId: string): void {
@@ -125,7 +134,7 @@ export class HomePage implements OnInit {
           role: 'destructive',
           handler: () => {
             this.taskService.deleteTask(task.id);
-            this.showToast('Tarea eliminada', 'danger');
+            this.showToast(`Tarea "${task.title}" eliminada`, 'danger');
           },
         },
       ],
@@ -134,29 +143,27 @@ export class HomePage implements OnInit {
   }
 
   async editTask(task: Task): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Editar tarea',
-      inputs: [
-        {
-          name: 'title',
-          type: 'text',
-          value: task.title,
-          placeholder: 'Nombre de la tarea',
-        },
-      ],
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Guardar',
-          handler: (data) => {
-            if (this.taskService.updateTaskTitle(task.id, data.title)) {
-              this.showToast('Tarea actualizada', 'success');
-            }
-          },
-        },
-      ],
+    const modal = await this.modalCtrl.create({
+      component: AddTaskModalComponent,
+      breakpoints: [0, 0.6, 0.85],
+      initialBreakpoint: 0.6,
+      handle: true,
+      cssClass: 'add-task-sheet',
+      componentProps: {
+        initialTitle: task.title,
+        initialCategoryId: task.categoryId,
+      },
     });
-    await alert.present();
+    await modal.present();
+
+    const { data } = await modal.onWillDismiss();
+    if (data?.title) {
+      this.taskService.updateTaskTitle(task.id, data.title);
+      if (data.categoryId !== undefined) {
+        this.taskService.assignCategory(task.id, data.categoryId);
+      }
+      await this.showToast('Tarea actualizada', 'success');
+    }
   }
 
   async openTaskOptions(task: Task): Promise<void> {
@@ -169,9 +176,9 @@ export class HomePage implements OnInit {
           handler: () => this.editTask(task),
         },
         {
-          text: 'Cambiar categoría',
-          icon: 'pricetag-outline',
-          handler: () => this.changeCategoryAlert(task),
+          text: task.completed ? 'Marcar pendiente' : 'Marcar completada',
+          icon: 'checkmark-done-outline',
+          handler: () => this.toggleTask(task.id),
         },
         {
           text: 'Eliminar',
@@ -185,67 +192,26 @@ export class HomePage implements OnInit {
     await actionSheet.present();
   }
 
-  async changeCategoryAlert(task: Task): Promise<void> {
-    const categories = this.categoryService.getCategoriesSnapshot();
-
-    const inputs = [
-      {
-        type: 'radio' as const,
-        label: 'Sin categoría',
-        value: null,
-        checked: task.categoryId === null,
-      },
-      ...categories.map(cat => ({
-        type: 'radio' as const,
-        label: cat.name,
-        value: cat.id,
-        checked: task.categoryId === cat.id,
-      })),
-    ];
-
-    const alert = await this.alertCtrl.create({
-      header: 'Seleccionar categoría',
-      inputs,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Asignar',
-          handler: (categoryId) => {
-            this.taskService.assignCategory(task.id, categoryId ?? null);
-            this.showToast('Categoría actualizada', 'success');
-          },
-        },
-      ],
+  async openAddTaskSheet(): Promise<void> {
+    const modal = await this.modalCtrl.create({
+      component: AddTaskModalComponent,
+      breakpoints: [0, 0.6, 0.85],
+      initialBreakpoint: 0.6,
+      handle: true,
+      cssClass: 'add-task-sheet',
     });
-    await alert.present();
-  }
+    await modal.present();
 
-  async clearCompleted(): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Limpiar completadas',
-      message: '¿Eliminar todas las tareas completadas?',
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Eliminar todas',
-          role: 'destructive',
-          handler: () => {
-            this.taskService.clearCompleted();
-            this.showToast('Tareas completadas eliminadas', 'danger');
-          },
-        },
-      ],
-    });
-    await alert.present();
-  }
-
-  trackById(_: number, task: Task): string {
-    return task.id;
+    const { data } = await modal.onWillDismiss();
+    if (data?.title) {
+      this.taskService.addTask(data.title, data.categoryId ?? null);
+      await this.showToast('Tarea agregada', 'success');
+    }
   }
 
   getCategoryColor(categoryId: string | null): string {
-    if (!categoryId) return '#92949c';
-    return this.categoryService.getCategoryById(categoryId)?.color ?? '#92949c';
+    if (!categoryId) return '#9b98b8';
+    return this.categoryService.getCategoryById(categoryId)?.color ?? '#9b98b8';
   }
 
   getCategoryName(categoryId: string | null): string {
@@ -255,7 +221,7 @@ export class HomePage implements OnInit {
 
   private async showToast(
     message: string,
-    color: 'success' | 'danger' | 'warning' = 'success'
+    color: 'success' | 'danger' | 'warning' = 'success',
   ): Promise<void> {
     const toast = await this.toastCtrl.create({
       message,

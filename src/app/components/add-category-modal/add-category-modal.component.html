@@ -1,0 +1,36 @@
+<div class="sheet-wrap">
+  <div class="sheet-handle"></div>
+
+  <p class="sheet-title">
+    {{ isEdit ? "Editar categoria" : "Nueva categoria" }}
+  </p>
+
+  <input
+    #titleInput
+    class="task-name-input"
+    [(ngModel)]="categoryName"
+    placeholder="Nombre de la categoria"
+    (keyup.enter)="save()"
+    autofocus
+  />
+
+  <div class="section-title">Color</div>
+
+  <div class="color-picker-wrap">
+    <div class="color-preview" [style.background]="selectedColor"></div>
+    <input
+      class="color-input-native"
+      type="color"
+      [value]="selectedColor"
+      (input)="onColorInput($event)"
+    />
+    <span class="color-hex">{{ selectedColor }}</span>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-cancel" (click)="cancel()">Cancelar</button>
+    <button class="btn-save" (click)="save()" [disabled]="!categoryName.trim()">
+      {{ isEdit ? "Guardar cambios" : "Crear" }}
+    </button>
+  </div>
+</div>

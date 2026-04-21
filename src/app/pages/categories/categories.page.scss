@@ -1,0 +1,171 @@
+:host {
+  --app-bg: #f5f4ff;
+  --app-purple: #3d3580;
+  --app-purple-light: #e8e6ff;
+  --app-text: #1a1a2e;
+  --app-muted: #9b98b8;
+  --app-surface: #ffffff;
+  --app-border: rgba(61, 53, 128, 0.1);
+  --tab-height: 80px;
+}
+
+ion-toolbar {
+  --background: var(--app-bg);
+  --border-width: 0;
+}
+
+ion-content {
+  --background: var(--app-bg);
+  --padding-bottom: calc(var(--tab-height) + 16px);
+}
+
+.page-header {
+  padding: 20px 24px 16px;
+}
+
+.page-title {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--app-text);
+  letter-spacing: -0.5px;
+  margin: 0 0 6px;
+}
+
+.page-sub {
+  font-size: 14px;
+  color: var(--app-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.content-pad {
+  padding: 0 24px;
+}
+
+.create-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--app-purple);
+  border: none;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 28px;
+  transition: opacity 0.15s;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.create-icon {
+  font-size: 18px;
+}
+
+.cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--app-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.cat-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cat-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cat-name {
+  font-size: 16px;
+  color: var(--app-text);
+  font-weight: 500;
+}
+
+.cat-count {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--app-muted);
+}
+
+.cat-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.row-action-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--app-muted);
+  font-size: 18px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--app-purple-light);
+  }
+
+  &.danger-btn {
+    color: #e05060;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0 24px;
+  text-align: center;
+  gap: 8px;
+}
+
+.empty-icon {
+  font-size: 40px;
+  color: var(--app-muted);
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--app-text);
+  margin: 0;
+}
+
+.empty-sub {
+  font-size: 14px;
+  color: var(--app-muted);
+  margin: 0;
+}
