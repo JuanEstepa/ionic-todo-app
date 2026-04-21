@@ -87,3 +87,6 @@ android/.gradle/
 android/app/build/
 android/build/
 EOF
+ios/App/CapApp-SPM/build/
+ios/App/CapApp-SPM/build/
+ios/App/CapApp-SPM/build/
