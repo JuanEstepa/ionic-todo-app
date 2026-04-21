@@ -1,14 +1,38 @@
-import { Component } from '@angular/core';
+/**
+ * @file tabs.component.ts
+ * @description Layout principal con tab bar — integrado con Remote Config.
+ *
+ * ── CAMBIO RESPECTO A LA VERSIÓN ANTERIOR ─────────────────────────────────
+ *
+ * Se inyecta RemoteConfigService y se expone su signal showCategoriesTab
+ * directamente al template.
+ *
+ * El template usa @if (showCategoriesTab()) para mostrar u ocultar
+ * el tab button de Categorías. Como es un Signal, Angular actualiza
+ * la UI automáticamente si el valor cambia en tiempo de ejecución
+ * sin necesidad de markForCheck() ni suscripciones manuales.
+ */
+
+import { Component, inject } from '@angular/core';
 import {
-  IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, IonFab, IonFabButton,
+  IonTabs,
+  IonTabBar,
+  IonTabButton,
+  IonIcon,
+  IonLabel,
+  ModalController,
 } from '@ionic/angular/standalone';
-import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
-import { checkmarkDoneOutline, addOutline, pricetagsOutline } from 'ionicons/icons';
-import { ModalController } from '@ionic/angular/standalone';
-import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-modal.component';
+import {
+  checkmarkDoneOutline,
+  addOutline,
+  pricetagsOutline,
+} from 'ionicons/icons';
+
+import { ModalController as MC } from '@ionic/angular/standalone';
 import { TaskService } from '../../services/task';
-import { inject } from '@angular/core';
+import { RemoteConfigService } from '../../services/remote-config.service.ts';
+import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-modal.component';
 
 @Component({
   selector: 'app-tabs',
@@ -17,8 +41,14 @@ import { inject } from '@angular/core';
   imports: [IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel],
 })
 export class TabsComponent {
-  private readonly modalCtrl   = inject(ModalController);
+  private readonly modalCtrl = inject(ModalController);
   private readonly taskService = inject(TaskService);
+
+  /**
+   * RemoteConfigService inyectado para leer el feature flag.
+   * Se expone como readonly para que el template acceda al signal.
+   */
+  readonly remoteConfig = inject(RemoteConfigService);
 
   constructor() {
     addIcons({ checkmarkDoneOutline, addOutline, pricetagsOutline });
