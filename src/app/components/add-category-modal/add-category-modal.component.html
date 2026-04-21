@@ -1,21 +1,47 @@
+<!--
+  @file add-category-modal.component.html
+  @description Vista del modal de creación/edición de categorías.
+
+  Estructura:
+  - Handle visual del bottom sheet
+  - Título dinámico según modo (crear / editar)
+  - Input de texto para el nombre de la categoría
+  - Selector de color nativo del sistema (input type="color")
+  - Botones de cancelar y guardar
+
+  El selector de color usa un <input type="color"> invisible superpuesto
+  sobre un bloque visual (preview circular + hex). Al tocar cualquier parte
+  del bloque se abre el color picker nativo del sistema operativo,
+  sin librerías externas y con soporte completo en iOS y Android.
+-->
+
 <div class="sheet-wrap">
   <div class="sheet-handle"></div>
 
+  <!-- Título dinámico según si se está creando o editando -->
   <p class="sheet-title">
-    {{ isEdit ? "Editar categoria" : "Nueva categoria" }}
+    {{ isEdit ? "Editar categoría" : "Nueva categoría" }}
   </p>
 
+  <!-- Input de nombre: foco automático via ionViewDidEnter() en el .ts -->
   <input
     #titleInput
     class="task-name-input"
     [(ngModel)]="categoryName"
-    placeholder="Nombre de la categoria"
+    placeholder="Nombre de la categoría"
     (keyup.enter)="save()"
     autofocus
   />
 
   <div class="section-title">Color</div>
 
+  <!--
+    Bloque de selector de color:
+    - .color-preview: círculo con el color seleccionado (visual)
+    - .color-input-native: input type="color" invisible superpuesto
+      que abre el picker nativo al tocar cualquier parte del bloque
+    - .color-hex: valor hexadecimal actual del color seleccionado
+  -->
   <div class="color-picker-wrap">
     <div class="color-preview" [style.background]="selectedColor"></div>
     <input

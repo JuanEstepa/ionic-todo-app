@@ -1,10 +1,30 @@
+<!--
+  @file add-task-modal.component.html
+  @description Vista del modal de creación/edición de tareas.
+
+  Estructura:
+  - Handle visual del bottom sheet
+  - Título dinámico según modo (crear / editar)
+  - Input de texto para el nombre de la tarea
+  - Grid de chips para seleccionar categoría
+  - Botón "Nueva" para ir a crear categorías (controlado por feature flag)
+  - Botones de cancelar y guardar
+
+  El botón "Nueva categoría" solo aparece cuando el feature flag
+  show_categories_tab está activo en Firebase Remote Config.
+  Si está desactivado, la página de categorías tampoco es accesible
+  desde el tab bar, por lo que el botón se oculta de forma consistente.
+-->
+
 <div class="sheet-wrap">
   <div class="sheet-handle"></div>
 
+  <!-- Título dinámico según si se está creando o editando -->
   <p class="sheet-title">
     {{ isEdit ? "Editar tarea" : "Nueva tarea" }}
   </p>
 
+  <!-- Input principal: foco automático via ionViewDidEnter() en el .ts -->
   <input
     #titleInput
     class="task-name-input"
@@ -14,9 +34,10 @@
     autofocus
   />
 
-  <div class="section-title">Categorias</div>
+  <div class="section-title">Categorías</div>
 
   <div class="category-chips">
+    <!-- Chip "Sin categoría" — siempre visible -->
     <button
       class="cat-chip"
       [class.active]="selectedCategoryId === null"
@@ -26,6 +47,7 @@
       N/A
     </button>
 
+    <!-- Un chip por cada categoría existente -->
     @for (cat of categories(); track cat.id) {
       <button
         class="cat-chip"
@@ -38,6 +60,11 @@
       </button>
     }
 
+    <!--
+      Botón "Nueva": navega a la página de categorías para crear una.
+      Se oculta cuando el feature flag show_categories_tab está en false,
+      ya que la página de categorías no sería accesible desde el tab bar.
+    -->
     @if (remoteConfig.showCategoriesTab()) {
       <button class="cat-chip new-chip" (click)="goToCategories()">
         <span class="plus-icon">+</span>
@@ -47,9 +74,9 @@
   </div>
 
   <div class="sheet-actions">
-    <button class="btn-cancel" (click)="cancel()">Cancel</button>
+    <button class="btn-cancel" (click)="cancel()">Cancelar</button>
     <button class="btn-save" (click)="save()" [disabled]="!taskTitle.trim()">
-      {{ isEdit ? "Editar" : "Guardar Tarea" }}
+      {{ isEdit ? "Editar" : "Guardar tarea" }}
     </button>
   </div>
 </div>

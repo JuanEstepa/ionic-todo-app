@@ -1,29 +1,51 @@
+<!--
+  @file categories.page.html
+  @description Vista de gestión de categorías.
+
+  Estructura:
+  - Encabezado con título y subtítulo
+  - Botón principal para crear nueva categoría
+  - Lista de categorías con swatch de color, nombre, conteo de tareas
+    y botones de editar / eliminar
+  - Estado vacío (@empty) cuando no hay categorías
+
+  Optimizaciones:
+  - @for con track cat.id: Angular reutiliza nodos DOM existentes
+    al actualizar la lista en lugar de destruir y recrear todos.
+  - getTaskCount() lee el Map computado (O(1)) en lugar de recorrer
+    el array de tareas en cada render.
+-->
+
 <ion-header [translucent]="true" class="ion-no-border">
-  <ion-toolbar> </ion-toolbar>
+  <ion-toolbar></ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <div class="page-header">
-    <h1 class="page-title">Categorias</h1>
-    <p class="page-sub">Organiza tu tareas en categorias</p>
+    <h1 class="page-title">Categorías</h1>
+    <p class="page-sub">Organiza tus tareas en categorías</p>
   </div>
 
   <div class="content-pad">
+    <!-- Botón principal para abrir el modal de nueva categoría -->
     <button class="create-btn" (click)="openAddCategoryModal()">
       <ion-icon name="add-outline" class="create-icon" />
-      Nueva categoria
+      Nueva categoría
     </button>
 
     <div class="cat-list">
       @for (cat of categories(); track cat.id) {
       <div class="cat-row">
+        <!-- Swatch de color: identidad visual de la categoría -->
         <div class="cat-dot" [style.background-color]="cat.color"></div>
 
+        <!-- Nombre y conteo de tareas asociadas -->
         <div class="cat-info">
           <span class="cat-name">{{ cat.name }}</span>
           <span class="cat-count">{{ getTaskCount(cat.id) }} Tareas</span>
         </div>
 
+        <!-- Acciones: editar y eliminar -->
         <div class="cat-row-actions">
           <button class="row-action-btn" (click)="openEditCategoryModal(cat)">
             <ion-icon name="create-outline" />
@@ -36,11 +58,13 @@
           </button>
         </div>
       </div>
+
       } @empty {
+      <!-- Estado vacío: se muestra cuando no hay ninguna categoría -->
       <div class="empty-state">
         <ion-icon name="pricetags-outline" class="empty-icon" />
-        <h3 class="empty-title">No existen categorias</h3>
-        <p class="empty-sub">Crea tu primera categoria</p>
+        <h3 class="empty-title">No existen categorías</h3>
+        <p class="empty-sub">Crea tu primera categoría</p>
       </div>
       }
     </div>
