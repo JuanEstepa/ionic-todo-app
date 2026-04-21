@@ -50,17 +50,14 @@ import {
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
   IonContent,
-  IonFooter,
   IonList,
   IonItem,
   IonLabel,
   IonBadge,
-  IonButton,
   IonIcon,
   IonCheckbox,
   IonItemSliding,
@@ -96,16 +93,13 @@ import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     IonHeader,
     IonToolbar,
     IonContent,
-    IonFooter,
     IonList,
     IonItem,
     IonLabel,
     IonBadge,
-    IonButton,
     IonIcon,
     IonCheckbox,
     IonItemSliding,

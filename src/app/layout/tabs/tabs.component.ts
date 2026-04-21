@@ -30,7 +30,7 @@ import {
 } from 'ionicons/icons';
 
 import { TaskService } from '../../services/task';
-import { RemoteConfigService } from '../../services/remote-config.service.ts';
+import { RemoteConfigService } from '../../services/remote-config.service';
 import { AddTaskModalComponent } from '../../components/add-task-modal/add-task-modal.component';
 
 @Component({

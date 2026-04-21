@@ -12,7 +12,7 @@ import { IonIcon, ModalController } from '@ionic/angular/standalone';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { addIcons } from 'ionicons';
 import { mailOutline } from 'ionicons/icons';
-import { RemoteConfigService } from '../../services/remote-config.service.ts';
+import { RemoteConfigService } from '../../services/remote-config.service';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
 
